@@ -18,6 +18,11 @@
       <el-table-column prop="name" label="姓名" width="100" />
       <el-table-column prop="gender" label="性别" width="80" />
       <el-table-column prop="phone" label="联系方式" width="140" />
+      <el-table-column label="所属部门" width="140">
+        <template #default="{ row }">
+          {{ row.departmentName || '-' }}
+        </template>
+      </el-table-column>
       <el-table-column label="权限级别" width="120">
         <template #default="{ row }">
           <el-tag :type="roleTagType(row.roleLevel)">
@@ -72,6 +77,21 @@
         <el-form-item label="联系方式" prop="phone">
           <el-input v-model="formData.phone" placeholder="请输入联系方式" />
         </el-form-item>
+        <el-form-item label="所属部门" prop="departmentId">
+          <el-select
+            v-model="formData.departmentId"
+            placeholder="请选择所属部门（可不选）"
+            clearable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="dept in departments"
+              :key="dept.id"
+              :label="dept.name"
+              :value="dept.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="密码" prop="password">
           <el-input
             v-model="formData.password"
@@ -106,7 +126,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { accountApi } from '@/api'
+import { accountApi, departmentApi } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete, Refresh } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -118,6 +138,7 @@ const isEdit = ref(false)
 const editId = ref<number>(0)
 
 const users = ref<any[]>([])
+const departments = ref<any[]>([])
 
 const formRef = ref<FormInstance>()
 
@@ -126,6 +147,7 @@ const formData = reactive({
   name: '',
   gender: '男',
   phone: '',
+  departmentId: null as number | null,
   password: '',
   roleLevel: 1,
   status: 1,
@@ -164,11 +186,20 @@ async function loadUsers() {
   }
 }
 
+async function loadDepartments() {
+  try {
+    departments.value = await departmentApi.getAll()
+  } catch (error: any) {
+    ElMessage.error(error.message || '加载部门列表失败')
+  }
+}
+
 function resetForm() {
   formData.username = ''
   formData.name = ''
   formData.gender = '男'
   formData.phone = ''
+  formData.departmentId = null
   formData.password = ''
   formData.roleLevel = 1
   formData.status = 1
@@ -191,6 +222,7 @@ function openEditDialog(row: any) {
   formData.name = row.name
   formData.gender = row.gender || '男'
   formData.phone = row.phone || ''
+  formData.departmentId = row.departmentId ?? null
   formData.roleLevel = row.roleLevel
   formData.status = row.status
   formData.isSuper = row.isSuper
@@ -249,6 +281,7 @@ async function handleDelete(row: any) {
 
 onMounted(() => {
   loadUsers()
+  loadDepartments()
 })
 </script>
 

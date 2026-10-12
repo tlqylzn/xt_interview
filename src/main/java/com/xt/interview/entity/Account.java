@@ -23,6 +23,10 @@ public class Account {
     @Column(name = "phone", length = 20)
     private String phone;
 
+    /** 所属部门ID，可为空（表示未分配部门）。部门名称由 Service 层按 id 解析后写入 DTO。 */
+    @Column(name = "department_id")
+    private Long departmentId;
+
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 
@@ -73,6 +77,9 @@ public class Account {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    public Long getDepartmentId() { return departmentId; }
+    public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }

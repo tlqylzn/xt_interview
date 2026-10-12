@@ -8,6 +8,9 @@ public class AccountDTO {
     private String name;
     private String gender;
     private String phone;
+    private Long departmentId;
+    /** 部门名称，只读字段：由 Service 按 departmentId 解析后填充，前端提交时忽略。 */
+    private String departmentName;
     private String password;
     private Integer roleLevel;
     private Integer status;
@@ -31,6 +34,12 @@ public class AccountDTO {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    public Long getDepartmentId() { return departmentId; }
+    public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
+
+    public String getDepartmentName() { return departmentName; }
+    public void setDepartmentName(String departmentName) { this.departmentName = departmentName; }
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
