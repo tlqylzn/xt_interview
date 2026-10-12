@@ -18,6 +18,16 @@ export const accountApi = {
   getAll() {
     return request.get('/accounts')
   },
+  // 搜索 + 分页。page 从 0 开始；筛选条件传 undefined 表示不筛选（axios 会忽略 undefined 的参数）
+  page(params: {
+    username?: string
+    status?: number
+    roleLevel?: number
+    page: number
+    size: number
+  }) {
+    return request.get('/accounts/page', { params })
+  },
   getById(id: number) {
     return request.get(`/accounts/${id}`)
   },

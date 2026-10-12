@@ -7,6 +7,37 @@
       <el-button :icon="Refresh" @click="loadUsers">刷新</el-button>
     </div>
 
+    <div class="search-bar">
+      <el-input
+        v-model="searchForm.username"
+        placeholder="请输入用户名"
+        clearable
+        style="width: 200px"
+        @keyup.enter="handleSearch"
+      />
+      <el-select
+        v-model="searchForm.status"
+        placeholder="全部状态"
+        clearable
+        style="width: 140px"
+      >
+        <el-option label="启用" :value="1" />
+        <el-option label="禁用" :value="0" />
+      </el-select>
+      <el-select
+        v-model="searchForm.roleLevel"
+        placeholder="全部权限级别"
+        clearable
+        style="width: 180px"
+      >
+        <el-option label="用户权限" :value="1" />
+        <el-option label="管理员权限" :value="2" />
+        <el-option label="超级管理员权限" :value="3" />
+      </el-select>
+      <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
+      <el-button :icon="RefreshLeft" @click="handleReset">重置</el-button>
+    </div>
+
     <el-table
       v-loading="loading"
       :data="users"
@@ -49,6 +80,17 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <el-pagination
+      :current-page="query.page"
+      :page-size="query.size"
+      :total="query.total"
+      :page-sizes="[5, 10, 20, 50]"
+      layout="total, sizes, prev, pager, next, jumper"
+      class="pagination"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
 
     <el-dialog
       v-model="dialogVisible"
@@ -128,7 +170,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { accountApi, departmentApi } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Edit, Delete, Refresh } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Refresh, Search, RefreshLeft } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const loading = ref(false)
@@ -141,6 +183,21 @@ const users = ref<any[]>([])
 const departments = ref<any[]>([])
 
 const formRef = ref<FormInstance>()
+
+// 搜索条件。用 undefined 而不是空字符串表示"未选择"，
+// axios 会自动把 undefined 的参数从 query string 里丢掉，后端收到 null 即不筛选。
+const searchForm = reactive({
+  username: '',
+  status: undefined as number | undefined,
+  roleLevel: undefined as number | undefined
+})
+
+// 分页状态。page 是给 el-pagination 用的，从 1 开始；调接口时再减 1 转成后端的 0-based。
+const query = reactive({
+  page: 1,
+  size: 10,
+  total: 0
+})
 
 const formData = reactive({
   username: '',
@@ -178,7 +235,15 @@ function roleTagType(level: number): 'info' | 'warning' | 'danger' {
 async function loadUsers() {
   loading.value = true
   try {
-    users.value = await accountApi.getAll()
+    const res: any = await accountApi.page({
+      username: searchForm.username || undefined,
+      status: searchForm.status,
+      roleLevel: searchForm.roleLevel,
+      page: query.page - 1,
+      size: query.size
+    })
+    users.value = res.list
+    query.total = res.totalElements
   } catch (error: any) {
     ElMessage.error(error.message || '加载用户列表失败')
   } finally {
@@ -186,9 +251,36 @@ async function loadUsers() {
   }
 }
 
+// 搜索条件变了，回到第一页重新查，否则可能停在一个越界的页码上
+function handleSearch() {
+  query.page = 1
+  loadUsers()
+}
+
+function handleReset() {
+  searchForm.username = ''
+  searchForm.status = undefined
+  searchForm.roleLevel = undefined
+  query.page = 1
+  loadUsers()
+}
+
+function handlePageChange(page: number) {
+  query.page = page
+  loadUsers()
+}
+
+// 改每页条数后总页数会变，同样回到第一页
+function handleSizeChange(size: number) {
+  query.size = size
+  query.page = 1
+  loadUsers()
+}
+
 async function loadDepartments() {
   try {
-    departments.value = await departmentApi.getAll()
+    const res: any = await departmentApi.getAll()
+    departments.value = res
   } catch (error: any) {
     ElMessage.error(error.message || '加载部门列表失败')
   }
@@ -247,6 +339,8 @@ async function handleSubmit() {
       } else {
         await accountApi.create(data)
         ElMessage.success('用户创建成功')
+        // 列表按 id 倒序，新建的用户在第一页
+        query.page = 1
       }
       dialogVisible.value = false
       await loadUsers()
@@ -271,6 +365,10 @@ async function handleDelete(row: any) {
     )
     await accountApi.delete(row.id)
     ElMessage.success('用户删除成功')
+    // 删的是当前页最后一条时往前退一页，否则会停在一个空页上
+    if (users.value.length === 1 && query.page > 1) {
+      query.page -= 1
+    }
     await loadUsers()
   } catch (error: any) {
     if (error !== 'cancel') {
@@ -295,6 +393,18 @@ onMounted(() => {
 .page-header {
   display: flex;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+}
+
+.search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.pagination {
+  margin-top: 16px;
+  justify-content: flex-end;
 }
 </style>

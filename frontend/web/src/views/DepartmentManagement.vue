@@ -115,7 +115,8 @@ const formRules: FormRules = {
 async function loadDepartments() {
   loading.value = true
   try {
-    departments.value = await departmentApi.getAll()
+    const res: any = await departmentApi.getAll()
+    departments.value = res
   } catch (error: any) {
     ElMessage.error(error.message || '加载部门列表失败')
   } finally {
